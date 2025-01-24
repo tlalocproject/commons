@@ -124,8 +124,10 @@ class _cloudformation:
         ):
             print("Handling failed aws_stack")
             self._cloudformation_client.delete_stack(StackName=user.config["aws_stack"])
-            while self.check_stack(user.config["aws_stack"]) not in self.special_cases:
-                time.sleep(1)
+            self.deploy_wait(user)
+            if self.check_stack(user.config["aws_stack"]) != "DOES_NOT_EXIST":
+                print("Failed to delete stack, cannot continue")
+                raise ValueError("Failed to delete stack, cannot continue")
             print("Creating aws_stack")
             self._cloudformation_client.create_stack(
                 StackName=user.config["aws_stack"],
