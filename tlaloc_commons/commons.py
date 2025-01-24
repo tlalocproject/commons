@@ -26,6 +26,7 @@ class _cloudformation:
         "REVIEW_IN_PROGRESS",
         "IMPORT_IN_PROGRESS",
         "IMPORT_ROLLBACK_IN_PROGRESS",
+        "DELETE_IN_PROGRESS",
     ]
 
     successful_statuses = [
@@ -35,6 +36,9 @@ class _cloudformation:
         "UPDATE_ROLLBACK_COMPLETE",
         "IMPORT_COMPLETE",
         "IMPORT_ROLLBACK_COMPLETE",
+        "DELETE_COMPLETE",
+        "ROLLBACK_COMPLETE",
+        "UPDATE_ROLLBACK_COMPLETE",
     ]
     failed_statuses = [
         "CREATE_FAILED",
@@ -44,6 +48,8 @@ class _cloudformation:
         "UPDATE_ROLLBACK_FAILED",
         "IMPORT_FAILED",
         "IMPORT_ROLLBACK_FAILED",
+        "DELETE_FAILED",
+        "IMPORT_ROLLBACK_COMPLETE",
     ]
     rollback_statuses = [
         "ROLLBACK_COMPLETE",
