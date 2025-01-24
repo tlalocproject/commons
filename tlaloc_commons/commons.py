@@ -27,6 +27,7 @@ class _cloudformation:
         "IMPORT_IN_PROGRESS",
         "IMPORT_ROLLBACK_IN_PROGRESS",
         "DELETE_IN_PROGRESS",
+        "UPDATE_COMPLETE_CLEANUP_IN_PROGRESS",
     ]
 
     successful_statuses = [
