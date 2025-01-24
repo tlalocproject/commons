@@ -140,6 +140,50 @@ class _cloudformation:
 
         del self._aws_session
 
+    def deploy_wait(self, user, timeout=600):
+
+        # Create session
+        self._aws_session = boto3.session.Session(
+            profile_name=user.config["aws_profile"]
+        )
+
+        # Create client
+        self._cloudformation_client = self._aws_session.client(
+            "cloudformation", region_name=user.config["aws_region"]
+        )
+
+        while True:
+
+            # Checking that the stack exists
+            status = self.check_stack(user.config["aws_stack"])
+            if status == "DOES_NOT_EXIST":
+                print("The stack does not exist")
+                break
+
+            # Iterating while ongoing or timeout
+            start_time = time.time()
+            while (
+                status in self.in_progress_statuses and time.time() - start_time < timeout
+            ):
+                time.sleep(10)
+                status = self.check_stack(user.config["aws_stack"])
+
+            # Reporting the status
+            if status in self.successful_statuses or status == "DOES_NOT_EXIST":
+                print("Stack procedure successful")
+            elif status in self.failed_statuses:
+                print("Stack procedure failed")
+            else:
+                print("Stack procedure timed out")
+            print(f"Stack status: {status}")
+            break
+
+        # Closing the client
+        self._cloudformation_client.close()
+
+        # Deleting the session
+        del self._aws_session
+
     def check_stack(self, name):
         """
         Check the status of the CloudFormation stack
