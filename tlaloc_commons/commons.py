@@ -41,7 +41,7 @@ class _cloudformation:
         "UPDATE_COMPLETE_CLEANUP_IN_PROGRESS",
     ]
 
-    successful_statuses = [
+    completed_statuses = [
         "CREATE_COMPLETE",
         "DELETE_COMPLETE",
         "UPDATE_COMPLETE",
@@ -51,6 +51,7 @@ class _cloudformation:
         "DELETE_COMPLETE",
         "ROLLBACK_COMPLETE",
         "UPDATE_ROLLBACK_COMPLETE",
+        "IMPORT_ROLLBACK_COMPLETE",
     ]
     failed_statuses = [
         "CREATE_FAILED",
@@ -61,7 +62,7 @@ class _cloudformation:
         "IMPORT_FAILED",
         "IMPORT_ROLLBACK_FAILED",
         "DELETE_FAILED",
-        "IMPORT_ROLLBACK_COMPLETE",
+        "ROLLBACK_COMPLETE",
     ]
     rollback_statuses = [
         "ROLLBACK_COMPLETE",
@@ -113,11 +114,7 @@ class _cloudformation:
         if aws_stack_status == "DOES_NOT_EXIST":
             print("Creating aws_stack")
             self._cloudformation_client.create_stack(
-                StackName=user.config["aws_stack"],
-                TemplateURL=f"https://{user.config["aws_bucket"]}.s3.amazonaws.com/{prefix}/{user.config["timestamp"]}-{user.config["aws_stack_hash"]}.json",
-                Capabilities=["CAPABILITY_NAMED_IAM"],
-            )
-        elif aws_stack_status in self.successful_statuses:
+        elif aws_stack_status in self.completed_statuses:
             try:
                 print("Updating aws_stack")
                 self._cloudformation_client.update_stack(
@@ -183,7 +180,7 @@ class _cloudformation:
                 status = self.check_stack(user.config["aws_stack"])
 
             # Reporting the status
-            if status in self.successful_statuses or status == "DOES_NOT_EXIST":
+            if status in self.completed_statuses or status == "DOES_NOT_EXIST":
                 print("Stack procedure successful")
             elif status in self.failed_statuses:
                 print("Stack procedure failed")
