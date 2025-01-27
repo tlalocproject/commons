@@ -95,19 +95,21 @@ class _cloudformation:
         Returns:
             None
         """
+        # Transforming class to dictionary
+        user = _object_to_dict(user)
 
         # Create the AWS session
         self._aws_session = boto3.session.Session(
-            profile_name=user.config["aws_profile"]
+            profile_name=user["config"]["aws_profile"]
         )
 
         # Create the CloudFormation client
         self._cloudformation_client = self._aws_session.client(
-            "cloudformation", region_name=user.config["aws_region"]
+            "cloudformation", region_name=user["config"]["aws_region"]
         )
 
         # Check the aws_stack status
-        aws_stack_status = self.check_stack(user.config["aws_stack"])
+        aws_stack_status = self.check_stack(user["config"]["aws_stack"])
         print(f"Stack status: {aws_stack_status}")
 
         # Handle the aws_stack
