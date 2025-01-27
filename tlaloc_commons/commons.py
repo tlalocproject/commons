@@ -254,7 +254,8 @@ class _cloudformation:
             # Iterating while ongoing or timeout
             start_time = time.time()
             while (
-                status in self.in_progress_statuses and time.time() - start_time < timeout
+                status in self.in_progress_statuses
+                and time.time() - start_time < timeout
             ):
                 time.sleep(10)
                 status = self.check_stack(user["config"]["aws_stack"])
