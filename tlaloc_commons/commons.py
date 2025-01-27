@@ -231,7 +231,7 @@ class _cloudformation:
     def deploy_wait(self, user, timeout=600):
 
         # Create session
-        self._aws_session = boto3.session.Session(
+        self._aws_session_wait = boto3.session.Session(
             profile_name=user.config["aws_profile"]
         )
 
@@ -270,7 +270,7 @@ class _cloudformation:
         self._cloudformation_client.close()
 
         # Deleting the session
-        del self._aws_session
+        del self._aws_session_wait
 
     def check_stack(self, name):
         """
