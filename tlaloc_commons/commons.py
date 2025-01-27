@@ -159,6 +159,75 @@ class _cloudformation:
 
         del self._aws_session
 
+    def get_output(self, user, output_name):
+        """
+        Get the outputs of the CloudFormation stack
+
+        Args:
+            name (str): Name of the CloudFormation stack
+
+        Returns:
+            dict: Outputs of the CloudFormation stack
+        """
+
+        # Create the AWS session
+        self._aws_session = boto3.session.Session(
+            profile_name=user["config"]["aws_profile"]
+        )
+
+        # Create the CloudFormation client
+        self._cloudformation_client = self._aws_session.client(
+            "cloudformation", region_name=user["config"]["aws_region"]
+        )
+
+        # Looking up the stack
+        value = None
+        status = "DOES_NOT_EXIST"
+        while True:
+
+            # Check the stack status
+            status = self.check_stack(user["config"]["aws_stack"])
+            print(f"Stack status: {status}")
+            if (
+                status == "DOES_NOT_EXIST"
+                or status not in self.completed_statuses
+                or status in self.failed_statuses
+            ):
+                break
+
+            # Retrieve the stack outputs
+            response = self._cloudformation_client.describe_stacks(
+                StackName=user["config"]["aws_stack"]
+            )
+            outputs = response.get("Stacks")[0].get("Outputs")
+
+            # Find the value of the output
+            while True:
+                for output in outputs:
+                    if output["OutputKey"] == output_name:
+                        value = output["OutputValue"]
+                        break
+                break
+            break
+
+        # Close the CloudFormation client
+        self._cloudformation_client.close()
+
+        # Delete the session
+        del self._aws_session
+
+        if (
+            status == "DOES_NOT_EXIST"
+            or status in self.failed_statuses
+            or status not in self.completed_statuses
+        ):
+            raise ValueError(f"Stack is not in a valid state: {status}")
+
+        if value is None:
+            raise ValueError(f"Output {output_name} not found")
+
+        return value
+
     def deploy_wait(self, user, timeout=600):
 
         # Create session
