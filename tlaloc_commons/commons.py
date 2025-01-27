@@ -75,7 +75,7 @@ class _cloudformation:
         "DELETE_FAILED",
     ]
 
-    def deploy(self, user, prefix):
+    def deploy(self, user, prefix, capabilities=[], parameters=[]):
         """
         Deploy the CloudFormation stack
 
@@ -85,7 +85,7 @@ class _cloudformation:
                 aws_stack (str): AWS stack name
                 aws_region (str): AWS region
                 aws_bucket (str): Name of the S3 bucket where the CloudFormation template is stored
-                aws_stack_hash (str): AWS stack hash
+                aws_stack_file (str): AWS stack hash
                 timestamp (int): EPOCH timestamp when the build started
             prefix (str): Prefix of the S3 bucket path where the deployment files are stored
 
