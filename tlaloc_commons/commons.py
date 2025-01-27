@@ -5,14 +5,16 @@ import hashlib
 from botocore.exceptions import ClientError
 
 
-def _object_to_dict(obj):
-    if hasattr(obj, "__dict__"):  # Check if it's an object with __dict__
-        return {key: _object_to_dict(value) for key, value in vars(obj).items()}
-    elif isinstance(obj, list):  # Handle lists recursively
-        return [_object_to_dict(item) for item in obj]
-    elif isinstance(obj, dict):  # Handle dictionaries recursively
-        return {key: _object_to_dict(value) for key, value in obj.items()}
-    else:  # Return the value as is if it's not an object, list, or dictionary
+def _object_to_dict(obj, level=0):
+    if level > 10:
+        return obj
+    elif hasattr(obj, "__dict__"):
+        return {key: _object_to_dict(value, level+1) for key, value in vars(obj).items()}
+    elif isinstance(obj, list):
+        return [_object_to_dict(item, level+1) for item in obj]
+    elif isinstance(obj, dict):
+        return {key: _object_to_dict(value, level+1) for key, value in obj.items()}
+    else:
         return obj
 
 
