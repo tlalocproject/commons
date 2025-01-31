@@ -77,7 +77,7 @@ class _cloudformation:
         "DELETE_FAILED",
     ]
 
-    def deploy(self, user, prefix, capabilities=[], parameters=[]):
+    def deploy(self, config, capabilities=[], parameters=[]):
         """
         Deploy the CloudFormation stack
 
@@ -87,9 +87,9 @@ class _cloudformation:
                 aws_stack (str): AWS stack name
                 aws_region (str): AWS region
                 aws_bucket (str): Name of the S3 bucket where the CloudFormation template is stored
-                aws_stack_file (str): AWS stack hash
-                timestamp (int): EPOCH timestamp when the build started
-            prefix (str): Prefix of the S3 bucket path where the deployment files are stored
+                aws_folder (str): Folder in the S3 bucket where the deployment files are stored
+                aws_template_file (str): AWS stack hash
+                aws_template_body (str): Body of the CloudFormation template
 
         Raises:
             ValueError: If the stack is in progress
@@ -98,63 +98,108 @@ class _cloudformation:
             None
         """
         # Transforming class to dictionary
-        user = _object_to_dict(user)
+        config = _object_to_dict(config)
 
         # Create the AWS session
         self._aws_session = boto3.session.Session(
-            profile_name=user["config"]["aws_profile"]
+            profile_name=config["config"]["aws_profile"]
         )
 
         # Create the CloudFormation client
         self._cloudformation_client = self._aws_session.client(
-            "cloudformation", region_name=user["config"]["aws_region"]
+            "cloudformation", region_name=config["config"]["aws_region"]
         )
 
         # Check the aws_stack status
-        aws_stack_status = self.check_stack(user["config"]["aws_stack"])
+        aws_stack_status = self.check_stack(config["config"]["aws_stack"])
         print(f"Stack status: {aws_stack_status}")
 
-        # Handle the aws_stack
-        if aws_stack_status == "DOES_NOT_EXIST":
-            print("Creating aws_stack")
-            self._cloudformation_client.create_stack(
-                StackName=user["config"]["aws_stack"],
-                TemplateURL=f"https://{user["config"]["aws_bucket"]}.s3.amazonaws.com/{prefix}/{user["config"]["timestamp"]}-{user["config"]["aws_stack_file"]}.json",
-                Capabilities=capabilities,
-                Parameters=parameters,
-            )
-        elif aws_stack_status in self.in_progress_statuses:
-            raise ValueError("Stack is in progress")
-        elif aws_stack_status in self.failed_statuses:
-            print("Handling failed aws_stack")
-            self._cloudformation_client.delete_stack(
-                StackName=user["config"]["aws_stack"]
-            )
-            self.deploy_wait(user)
-            if self.check_stack(user["config"]["aws_stack"]) != "DOES_NOT_EXIST":
-                print("Failed to delete stack, cannot continue")
-                raise ValueError("Failed to delete stack, cannot continue")
-            print("Creating aws_stack")
-            self._cloudformation_client.create_stack(
-                StackName=user["config"]["aws_stack"],
-                TemplateURL=f"https://{user["config"]["aws_bucket"]}.s3.amazonaws.com/{prefix}/{user["config"]["timestamp"]}-{user["config"]["aws_stack_file"]}.json",
-                Capabilities=capabilities,
-                Parameters=parameters,
-            )
-        elif aws_stack_status in self.completed_statuses:
-            try:
-                print("Updating aws_stack")
-                self._cloudformation_client.update_stack(
-                    StackName=user["config"]["aws_stack"],
-                    TemplateURL=f"https://{user["config"]["aws_bucket"]}.s3.amazonaws.com/{prefix}/{user["config"]["timestamp"]}-{user["config"]["aws_stack_file"]}.json",
+        if "aws_template_file" in config["config"]:
+            # Handle the aws_stack
+            if aws_stack_status == "DOES_NOT_EXIST":
+                print("Creating aws_stack")
+                self._cloudformation_client.create_stack(
+                    StackName=config["config"]["aws_stack"],
+                    TemplateURL=f"https://{config["config"]["aws_bucket"]}.s3.amazonaws.com/{config["config"]["aws_folder"]}/{config["config"]["aws_template_file"]}",
                     Capabilities=capabilities,
                     Parameters=parameters,
                 )
-            except ClientError as e:
-                if "No updates are to be performed" in str(e):
-                    print("No updates detected. Skipping stack update.")
-                else:
-                    raise
+            elif aws_stack_status in self.in_progress_statuses:
+                raise ValueError("Stack is in progress")
+            elif aws_stack_status in self.failed_statuses:
+                print("Handling failed aws_stack")
+                self._cloudformation_client.delete_stack(
+                    StackName=config["config"]["aws_stack"]
+                )
+                self.deploy_wait(config)
+                if self.check_stack(config["config"]["aws_stack"]) != "DOES_NOT_EXIST":
+                    print("Failed to delete stack, cannot continue")
+                    raise ValueError("Failed to delete stack, cannot continue")
+                print("Creating aws_stack")
+                self._cloudformation_client.create_stack(
+                    StackName=config["config"]["aws_stack"],
+                    TemplateURL=f"https://{config["config"]["aws_bucket"]}.s3.amazonaws.com/{config["config"]["aws_folder"]}/{config["config"]["aws_template_file"]}",
+                    Capabilities=capabilities,
+                    Parameters=parameters,
+                )
+            elif aws_stack_status in self.completed_statuses:
+                try:
+                    print("Updating aws_stack")
+                    self._cloudformation_client.update_stack(
+                        StackName=config["config"]["aws_stack"],
+                        TemplateURL=f"https://{config["config"]["aws_bucket"]}.s3.amazonaws.com/{config["config"]["aws_folder"]}/{config["config"]["aws_template_file"]}",
+                        Capabilities=capabilities,
+                        Parameters=parameters,
+                    )
+                except ClientError as e:
+                    if "No updates are to be performed" in str(e):
+                        print("No updates detected. Skipping stack update.")
+                    else:
+                        raise
+        elif "aws_template_body" in config["config"]:
+            # Handle the aws_stack
+            if aws_stack_status == "DOES_NOT_EXIST":
+                print("Creating aws_stack")
+                self._cloudformation_client.create_stack(
+                    StackName=config["config"]["aws_stack"],
+                    TemplateBody=config["config"]["aws_template_body"],
+                    Capabilities=capabilities,
+                    Parameters=parameters,
+                )
+            elif aws_stack_status in self.in_progress_statuses:
+                raise ValueError("Stack is in progress")
+            elif aws_stack_status in self.failed_statuses:
+                print("Handling failed aws_stack")
+                self._cloudformation_client.delete_stack(
+                    StackName=config["config"]["aws_stack"]
+                )
+                self.deploy_wait(config)
+                if self.check_stack(config["config"]["aws_stack"]) != "DOES_NOT_EXIST":
+                    print("Failed to delete stack, cannot continue")
+                    raise ValueError("Failed to delete stack, cannot continue")
+                print("Creating aws_stack")
+                self._cloudformation_client.create_stack(
+                    StackName=config["config"]["aws_stack"],
+                    TemplateBody=config["config"]["aws_template_body"],
+                    Capabilities=capabilities,
+                    Parameters=parameters,
+                )
+            elif aws_stack_status in self.completed_statuses:
+                try:
+                    print("Updating aws_stack")
+                    self._cloudformation_client.update_stack(
+                        StackName=config["config"]["aws_stack"],
+                        TemplateBody=config["config"]["aws_template_body"],
+                        Capabilities=capabilities,
+                        Parameters=parameters,
+                    )
+                except ClientError as e:
+                    if "No updates are to be performed" in str(e):
+                        print("No updates detected. Skipping stack update.")
+                    else:
+                        raise
+        else:
+            raise ValueError("No template provided")
 
         # Close the CloudFormation client
         self._cloudformation_client.close()
