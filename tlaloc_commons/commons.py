@@ -77,7 +77,7 @@ class _cloudformation:
         "DELETE_FAILED",
     ]
 
-    def deploy(self, config, capabilities=[], parameters=[]):
+    def deploy(self, config, capabilities=[], parameters=[], tags=[]):
         """
         Deploy the CloudFormation stack
 
@@ -123,6 +123,7 @@ class _cloudformation:
                     TemplateURL=f"https://{config["config"]["aws_bucket"]}.s3.amazonaws.com/{config["config"]["aws_folder"]}/{config["config"]["aws_template_file"]}",
                     Capabilities=capabilities,
                     Parameters=parameters,
+                    Tags=tags,
                 )
             elif aws_stack_status in self.in_progress_statuses:
                 raise ValueError("Stack is in progress")
@@ -141,6 +142,7 @@ class _cloudformation:
                     TemplateURL=f"https://{config["config"]["aws_bucket"]}.s3.amazonaws.com/{config["config"]["aws_folder"]}/{config["config"]["aws_template_file"]}",
                     Capabilities=capabilities,
                     Parameters=parameters,
+                    Tags=tags,
                 )
             elif aws_stack_status in self.completed_statuses:
                 try:
@@ -165,6 +167,7 @@ class _cloudformation:
                     TemplateBody=config["config"]["aws_template_body"],
                     Capabilities=capabilities,
                     Parameters=parameters,
+                    Tags=tags,
                 )
             elif aws_stack_status in self.in_progress_statuses:
                 raise ValueError("Stack is in progress")
@@ -183,6 +186,7 @@ class _cloudformation:
                     TemplateBody=config["config"]["aws_template_body"],
                     Capabilities=capabilities,
                     Parameters=parameters,
+                    Tags=tags,
                 )
             elif aws_stack_status in self.completed_statuses:
                 try:
@@ -192,6 +196,7 @@ class _cloudformation:
                         TemplateBody=config["config"]["aws_template_body"],
                         Capabilities=capabilities,
                         Parameters=parameters,
+                        Tags=tags,
                     )
                 except ClientError as e:
                     if "No updates are to be performed" in str(e):
