@@ -63,7 +63,6 @@ class _cloudformation:
         "IMPORT_FAILED",
         "IMPORT_ROLLBACK_FAILED",
         "DELETE_FAILED",
-        "ROLLBACK_COMPLETE",
     ]
     rollback_statuses = [
         "ROLLBACK_COMPLETE",
