@@ -49,7 +49,6 @@ class _cloudformation:
         "UPDATE_COMPLETE",
         "UPDATE_ROLLBACK_COMPLETE",
         "IMPORT_COMPLETE",
-        "IMPORT_ROLLBACK_COMPLETE",
         "DELETE_COMPLETE",
         "ROLLBACK_COMPLETE",
         "IMPORT_ROLLBACK_COMPLETE",
