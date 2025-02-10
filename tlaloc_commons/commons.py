@@ -73,6 +73,14 @@ class _cloudformation:
         "DELETE_COMPLETE",
         "DELETE_FAILED",
     ]
+    update_impossible_statuses = [
+        "ROLLBACK_COMPLETE",
+        "ROLLBACK_FAILED",
+        "DELETE_FAILED",
+        "UPDATE_ROLLBACK_FAILED",
+        "IMPORT_ROLLBACK_FAILED",
+        "DELETE_FAILED",
+    ]
 
     def deploy(self, config, capabilities=[], parameters=[], tags=[]):
         """
@@ -124,7 +132,10 @@ class _cloudformation:
                 )
             elif aws_stack_status in self.in_progress_statuses:
                 raise ValueError("Stack is in progress")
-            elif aws_stack_status in self.failed_statuses:
+            elif (
+                aws_stack_status in self.failed_statuses
+                or aws_stack_status in self.update_impossible_statuses
+            ):
                 print("Handling failed aws_stack")
                 self._cloudformation_client.delete_stack(
                     StackName=config["config"]["aws_stack"]
