@@ -154,14 +154,67 @@ class _cloudformation:
                 )
             elif aws_stack_status in self.completed_statuses:
                 try:
-                    print("Updating aws_stack")
-                    self._cloudformation_client.update_stack(
+                    print("Creating change set")
+                    change_set = self._cloudformation_client.create_change_set(
                         StackName=config["config"]["aws_stack"],
                         TemplateURL=f"https://{config["config"]["aws_bucket"]}.s3.amazonaws.com/{config["config"]["aws_folder"]}/{config["config"]["aws_template_file"]}",
                         Capabilities=capabilities,
                         Parameters=parameters,
+                        Tags=tags,
+                        ChangeSetType="UPDATE",
+                        ChangeSetName=f"ChangeSet{config['config']['timestamp']}",
                     )
-                except ClientError as e:
+                    change_set_description = (
+                        self._cloudformation_client.describe_change_set(
+                            StackName=config["config"]["aws_stack"],
+                            ChangeSetName=f"ChangeSet{config['config']['timestamp']}",
+                        )
+                    )
+                    if change_set_description["Status"] == "FAILED":
+                        if (
+                            change_set_description["StatusReason"]
+                            == "The submitted information didn't contain changes. Submit different information to create a change set."
+                        ):
+                            print("No updates detected. Skipping stack update.")
+                            self._cloudformation_client.delete_change_set(
+                                StackName=config["config"]["aws_stack"],
+                                ChangeSetName=f"ChangeSet{config['config']['timestamp']}",
+                            )
+                            return
+                        else:
+                            raise ValueError(
+                                f"Failed to create change set: {change_set_description['StatusReason']}"
+                            )
+                    print("Waiting for change set to be created")
+                    waiter = self._cloudformation_client.get_waiter(
+                        "change_set_create_complete"
+                    )
+                    waiter.wait(
+                        ChangeSetName=change_set["Id"],
+                        WaiterConfig={
+                            "Delay": 10,
+                            "MaxAttempts": 30,
+                        },
+                    )
+                    print("Executing change set")
+                    self._cloudformation_client.execute_change_set(
+                        StackName=config["config"]["aws_stack"],
+                        ChangeSetName=f"ChangeSet{config['config']['timestamp']}",
+                    )
+                    print("Waiting for stack to be updated")
+                    waiter = self._cloudformation_client.get_waiter(
+                        "stack_update_complete"
+                    )
+                    waiter.wait(
+                        StackName=config["config"]["aws_stack"],
+                        WaiterConfig={
+                            "Delay": 10,
+                            "MaxAttempts": 30,
+                        },
+                    )
+                    stack_status = self.check_stack(config["config"]["aws_stack"])
+                    print(f"Stack status: {stack_status}")
+                except Exception as e:
                     if "No updates are to be performed" in str(e):
                         print("No updates detected. Skipping stack update.")
                     else:
@@ -172,7 +225,7 @@ class _cloudformation:
                 print("Creating aws_stack")
                 self._cloudformation_client.create_stack(
                     StackName=config["config"]["aws_stack"],
-                    TemplateBody=config["config"]["aws_template_body"],
+                    TemplateURL=f"https://{config["config"]["aws_bucket"]}.s3.amazonaws.com/{config["config"]["aws_folder"]}/{config["config"]["aws_template_file"]}",
                     Capabilities=capabilities,
                     Parameters=parameters,
                     Tags=tags,
@@ -191,22 +244,52 @@ class _cloudformation:
                 print("Creating aws_stack")
                 self._cloudformation_client.create_stack(
                     StackName=config["config"]["aws_stack"],
-                    TemplateBody=config["config"]["aws_template_body"],
+                    TemplateURL=f"https://{config["config"]["aws_bucket"]}.s3.amazonaws.com/{config["config"]["aws_folder"]}/{config["config"]["aws_template_file"]}",
                     Capabilities=capabilities,
                     Parameters=parameters,
                     Tags=tags,
                 )
             elif aws_stack_status in self.completed_statuses:
                 try:
-                    print("Updating aws_stack")
-                    self._cloudformation_client.update_stack(
+                    print("Creating change set")
+                    change_set = self._cloudformation_client.create_change_set(
                         StackName=config["config"]["aws_stack"],
                         TemplateBody=config["config"]["aws_template_body"],
                         Capabilities=capabilities,
                         Parameters=parameters,
                         Tags=tags,
+                        ChangeSetType="UPDATE",
+                        ChangeSetName=f"{config['config']['timestamp']}-change-set",
                     )
-                except ClientError as e:
+                    print("Waiting for change set to be created")
+                    waiter = self._cloudformation_client.get_waiter(
+                        "change_set_create_complete"
+                    )
+                    waiter.wait(
+                        ChangeSetName=change_set["Id"],
+                        WaiterConfig={
+                            "Delay": 10,
+                            "MaxAttempts": 30,
+                        },
+                    )
+                    print("Executing change set")
+                    self._cloudformation_client.execute_change_set(
+                        ChangeSetName=f"{config['config']['timestamp']}-change-set",
+                    )
+                    print("Waiting for stack to be updated")
+                    waiter = self._cloudformation_client.get_waiter(
+                        "stack_update_complete"
+                    )
+                    waiter.wait(
+                        StackName=config["config"]["aws_stack"],
+                        WaiterConfig={
+                            "Delay": 10,
+                            "MaxAttempts": 30,
+                        },
+                    )
+                    stack_status = self.check_stack(config["config"]["aws_stack"])
+                    print(f"Stack status: {stack_status}")
+                except Exception as e:
                     if "No updates are to be performed" in str(e):
                         print("No updates detected. Skipping stack update.")
                     else:
