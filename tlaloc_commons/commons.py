@@ -1,4 +1,5 @@
 import time
+import json
 import boto3
 import hashlib
 
@@ -9,11 +10,13 @@ def _object_to_dict(obj, level=0):
     if level > 10:
         return obj
     elif hasattr(obj, "__dict__"):
-        return {key: _object_to_dict(value, level+1) for key, value in vars(obj).items()}
+        return {
+            key: _object_to_dict(value, level + 1) for key, value in vars(obj).items()
+        }
     elif isinstance(obj, list):
-        return [_object_to_dict(item, level+1) for item in obj]
+        return [_object_to_dict(item, level + 1) for item in obj]
     elif isinstance(obj, dict):
-        return {key: _object_to_dict(value, level+1) for key, value in obj.items()}
+        return {key: _object_to_dict(value, level + 1) for key, value in obj.items()}
     else:
         return obj
 
@@ -120,7 +123,6 @@ class _cloudformation:
         print(f"Stack status: {aws_stack_status}")
 
         if "aws_template_file" in config["config"]:
-            # Handle the aws_stack
             if aws_stack_status == "DOES_NOT_EXIST":
                 print("Creating aws_stack")
                 self._cloudformation_client.create_stack(
@@ -220,7 +222,6 @@ class _cloudformation:
                     else:
                         raise
         elif "aws_template_body" in config["config"]:
-            # Handle the aws_stack
             if aws_stack_status == "DOES_NOT_EXIST":
                 print("Creating aws_stack")
                 self._cloudformation_client.create_stack(
