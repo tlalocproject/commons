@@ -441,6 +441,37 @@ class _cloudformation:
                 raise
 
 
+class _ssm:
+    """
+    SSM helper class
+
+    Attributes:
+        ssm (ssm): SSM helper class
+    """
+
+    def get_parameter(self, name):
+        """
+        Get the value of an SSM parameter
+
+        Args:
+            name (str): Name of the SSM parameter
+
+        Returns:
+            str: Value of the SSM parameter
+        """
+
+        # Create the SSM client
+        self._ssm_client = boto3.client("ssm")
+
+        # Get the parameter
+        response = self._ssm_client.get_parameter(Name=name)
+
+        # Close the SSM client
+        self._ssm_client.close()
+
+        return response["Parameter"]["Value"]
+
+
 class _aws:
     """
     AWS helper class
@@ -451,6 +482,8 @@ class _aws:
     """
 
     cloudformation = _cloudformation()
+
+    ssm = _ssm()
 
     regions = [
         "us-east-1",
